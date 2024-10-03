@@ -7,7 +7,8 @@ def create_message(id):
 
 def handle_client(client):
     data = client.recv(1024)
-    client.sendall(create_message(struct.unpack("!i", data)[1]))
+    coRelationID = int.from_bytes(data[8:12], byteorder="big")
+    client.sendall(create_message(coRelationID))
     client.close()
 
 
