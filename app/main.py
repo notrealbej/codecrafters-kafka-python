@@ -1,11 +1,10 @@
 import socket  # noqa: F401
 import struct
 
-def create_message(coRelationID: int, errorCode: int | None = None) -> bytes:
+def create_message(coRelationID: int, errorCode: int, apiKey: int) -> bytes:
     message = coRelationID.to_bytes(4, byteorder="big")
-    if(errorCode != None):
-        message += errorCode.to_bytes(2, byteorder="big")
-
+    message += errorCode.to_bytes(2, byteorder="big")
+    message += apiKey.to_bytes(2, byteorder="big")
     messageLen = len(message).to_bytes(4, byteorder="big")
     return messageLen + message
 
@@ -27,12 +26,14 @@ def main() -> None:
     client, _ = server.accept()
     request = client.recv(1024)
     request_data = parse_request(request)
+
     if 0 <= request_data["api_version"] <= 4:
-        message = create_message(request_data["correlation_id"])
+        message = create_message(request_data["correlation_id"], 0, request_data["api_key"])
     else:
         message = create_message(
-            request_data["correlation_id"], 35
-        )  # UNSUPPORTED_VERSION
+            request_data["correlation_id"], 35, request_data["api_key"]
+        ) 
+
     client.sendall(message)
     client.close()
 
