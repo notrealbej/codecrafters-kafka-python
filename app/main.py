@@ -7,8 +7,11 @@ def create_message(id):
 
 def handle_client(client):
     data = client.recv(1024)
+    apiVersion = int.from_bytes(data[6:8], byteorder="big")
     coRelationID = int.from_bytes(data[8:12], byteorder="big")
     client.sendall(create_message(coRelationID))
+    if(apiVersion not in [0, 1, 2, 3, 4]):
+        client.sendall(create_message(35))
     client.close()
 
 
