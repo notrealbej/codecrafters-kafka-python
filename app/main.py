@@ -1,10 +1,16 @@
 import socket  # noqa: F401
 import struct
 
+
 def create_message(coRelationID: int, errorCode: int, apiKey: int) -> bytes:
+    min_version, max_version = 0, 4
+    throttle_time_ms = 0
+    tag_buffer = b"\x00"
+
     message = coRelationID.to_bytes(4, byteorder="big")
-    message += errorCode.to_bytes(2, byteorder="big")
-    message += apiKey.to_bytes(2, byteorder="big")
+    message += errorCode.to_bytes(2, byteorder="big") + int(2).to_bytes(1, byteorder="big") + apiKey.to_bytes(2, byteorder="big") + min_version.to_bytes(2, byteorder="big")
+    message += max_version.to_bytes(2, byteorder="big") + tag_buffer + throttle_time_ms.to_bytes(4, byteorder="big") + tag_buffer
+
     messageLen = len(message).to_bytes(4, byteorder="big")
     return messageLen + message
 
