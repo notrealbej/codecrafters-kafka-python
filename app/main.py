@@ -9,24 +9,32 @@ def create_message(coRelationID: int, errorCode: int | None = None) -> bytes:
     messageLen = len(message).to_bytes(4, byteorder="big")
     return messageLen + message
 
-def handle_client(client):
-    data = client.recv(1024)
-    apiVersion = int.from_bytes(data[6:8], byteorder="big")
-    coRelationID = int.from_bytes(data[8:12], byteorder="big")
-    errorCode = None
-    if(apiVersion not in [0, 1, 2, 3, 4]):
-        errorCode = 35
+def parse_request(request: bytes) -> dict[str, int | str]:
+    buff_size = struct.calcsize(">ihhi")
+    length, api_key, api_version, correlation_id = struct.unpack(
+        ">ihhi", request[0:buff_size]
+    )
+    return {
+        "length": length,
+        "api_key": api_key,
+        "api_version": api_version,
+        "correlation_id": correlation_id,
+    }
 
-    client.sendall(create_message(coRelationID, errorCode))
-    client.close()
 
-
-def main():
-    print("Logs from your program will appear here!")
+def main() -> None:
     server = socket.create_server(("localhost", 9092), reuse_port=True)
-    while True:
-        client, addr = server.accept() 
-        handle_client(client)
+    client, _ = server.accept()
+    request = client.recv(1024)
+    request_data = parse_request(request)
+    if 0 <= request_data["api_version"] <= 4:
+        message = create_message(request_data["correlation_id"])
+    else:
+        message = create_message(
+            request_data["correlation_id"], 35
+        )  # UNSUPPORTED_VERSION
+    client.sendall(message)
+    client.close()
 
 
 if __name__ == "__main__":
