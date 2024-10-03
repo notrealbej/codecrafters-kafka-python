@@ -1,4 +1,5 @@
 import socket  # noqa: F401
+import struct
 
 def create_message(id):
     id_bytes = id.to_bytes(4, byteorder="big")
