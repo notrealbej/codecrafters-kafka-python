@@ -1,43 +1,58 @@
-import socket  # noqa: F401
-import struct
+import socket
+from enum import Enum, unique
 
 
-def create_message(coRelationID: int, errorCode: int, apiKey: int) -> bytes:
+@unique
+class ErrorCode(Enum):
+    NONE = 0
+    UNSUPPORTED_VERSION = 35
+
+
+def create_message(correlation_id: int, error_code: ErrorCode, api_key: int) -> bytes:
     min_version, max_version = 0, 4
     throttle_time_ms = 0
     tag_buffer = b"\x00"
 
-    message = coRelationID.to_bytes(4, byteorder="big")
-    message += errorCode.to_bytes(2, byteorder="big") + int(2).to_bytes(1, byteorder="big") + apiKey.to_bytes(2, byteorder="big") + min_version.to_bytes(2, byteorder="big")
-    message += max_version.to_bytes(2, byteorder="big") + tag_buffer + throttle_time_ms.to_bytes(4, byteorder="big") + tag_buffer
+    message = correlation_id.to_bytes(4, byteorder="big")
+    message += error_code.value.to_bytes(2, byteorder="big") + int(2).to_bytes(1, byteorder="big")
+    message += api_key.to_bytes(2, byteorder="big") + min_version.to_bytes(2, byteorder="big")
+    message += max_version.to_bytes(2, byteorder="big") + tag_buffer
+    message += throttle_time_ms.to_bytes(4, byteorder="big") + tag_buffer
 
-    messageLen = len(message).to_bytes(4, byteorder="big")
-    return messageLen + message
+    message_len = len(message).to_bytes(4, byteorder="big")
+    return message_len + message
 
-def parse_request(data: bytes) -> dict[str, int | str]:
+
+def parse_request(data: bytes) -> dict[str, int]:
     return {
-        "length": int.from_bytes(data[0:4]),
-        "api_key": int.from_bytes(data[4:6]),
-        "api_version": int.from_bytes(data[6:8]),
-        "correlation_id": int.from_bytes(data[8:12]),
+        "length": int.from_bytes(data[0:4], byteorder="big"),
+        "api_key": int.from_bytes(data[4:6], byteorder="big"),
+        "api_version": int.from_bytes(data[6:8], byteorder="big"),
+        "correlation_id": int.from_bytes(data[8:12], byteorder="big"),
     }
 
 
 def main() -> None:
     server = socket.create_server(("localhost", 9092), reuse_port=True)
+    client, _ = server.accept()
+
     while True:
-        client, _ = server.accept()
-        request = client.recv(1024)
+        request = client.recv(2048)
+        if not request:
+            break
+
         request_data = parse_request(request)
+        error_code = (
+            ErrorCode.NONE
+            if 0 <= request_data["api_version"] <= 4
+            else ErrorCode.UNSUPPORTED_VERSION
+        )
 
-        if 0 <= request_data["api_version"] <= 4:
-            message = create_message(request_data["correlation_id"], 0, request_data["api_key"])
-        else:
-            message = create_message(
-                request_data["correlation_id"], 35, request_data["api_key"]
-            ) 
-
+        message = create_message(
+            request_data["correlation_id"], error_code, request_data["api_key"]
+        )
         client.sendall(message)
+
     client.close()
 
 
