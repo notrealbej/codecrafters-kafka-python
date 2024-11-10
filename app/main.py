@@ -29,18 +29,19 @@ def parse_request(request: bytes) -> dict[str, int | str]:
 
 def main() -> None:
     server = socket.create_server(("localhost", 9092), reuse_port=True)
-    client, _ = server.accept()
-    request = client.recv(1024)
-    request_data = parse_request(request)
+    while True:
+        client, _ = server.accept()
+        request = client.recv(1024)
+        request_data = parse_request(request)
 
-    if 0 <= request_data["api_version"] <= 4:
-        message = create_message(request_data["correlation_id"], 0, request_data["api_key"])
-    else:
-        message = create_message(
-            request_data["correlation_id"], 35, request_data["api_key"]
-        ) 
+        if 0 <= request_data["api_version"] <= 4:
+            message = create_message(request_data["correlation_id"], 0, request_data["api_key"])
+        else:
+            message = create_message(
+                request_data["correlation_id"], 35, request_data["api_key"]
+            ) 
 
-    client.sendall(message)
+        client.sendall(message)
     client.close()
 
 
