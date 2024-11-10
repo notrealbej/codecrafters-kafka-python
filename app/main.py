@@ -14,16 +14,12 @@ def create_message(coRelationID: int, errorCode: int, apiKey: int) -> bytes:
     messageLen = len(message).to_bytes(4, byteorder="big")
     return messageLen + message
 
-def parse_request(request: bytes) -> dict[str, int | str]:
-    buff_size = struct.calcsize(">ihhi")
-    length, api_key, api_version, correlation_id = struct.unpack(
-        ">ihhi", request[0:buff_size]
-    )
+def parse_request(data: bytes) -> dict[str, int | str]:
     return {
-        "length": length,
-        "api_key": api_key,
-        "api_version": api_version,
-        "correlation_id": correlation_id,
+        "length": int.from_bytes(data[0:4]),
+        "api_key": int.from_bytes(data[4:6]),
+        "api_version": int.from_bytes(data[6:8]),
+        "correlation_id": int.from_bytes(data[8:12]),
     }
 
 
