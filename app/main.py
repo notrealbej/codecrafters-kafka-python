@@ -1,4 +1,5 @@
 import socket
+import threading
 from enum import Enum, unique
 
 
@@ -31,11 +32,7 @@ def parse_request(data: bytes) -> dict[str, int]:
         "correlation_id": int.from_bytes(data[8:12], byteorder="big"),
     }
 
-
-def main() -> None:
-    server = socket.create_server(("localhost", 9092), reuse_port=True)
-    client, _ = server.accept()
-
+def handler(client):
     while True:
         request = client.recv(2048)
         if not request:
@@ -54,6 +51,14 @@ def main() -> None:
         client.sendall(message)
 
     client.close()
+
+
+def main() -> None:
+    server = socket.create_server(("localhost", 9092), reuse_port=True)
+
+    while True:
+        client, _ = server.accept()
+        threading.Thread(target=handler, args=(client,), daemon=True).start()
 
 
 if __name__ == "__main__":
