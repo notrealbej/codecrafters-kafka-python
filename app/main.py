@@ -11,8 +11,6 @@ class ErrorCode(Enum):
 
 def create_message(correlation_id: int, error_code: ErrorCode, api_key: int) -> bytes:
     min_version, max_version = 0, 4
-    if api_key == 1:
-        max_version = 16
     throttle_time_ms = 0
     tag_buffer = b"\x00"
 
@@ -20,6 +18,11 @@ def create_message(correlation_id: int, error_code: ErrorCode, api_key: int) -> 
     message += error_code.value.to_bytes(2, byteorder="big") + int(2).to_bytes(1, byteorder="big")
     message += api_key.to_bytes(2, byteorder="big") + min_version.to_bytes(2, byteorder="big")
     message += max_version.to_bytes(2, byteorder="big") + tag_buffer
+    message += throttle_time_ms.to_bytes(4, byteorder="big") + tag_buffer
+
+    message += (0).value.to_bytes(2, byteorder="big") + int(2).to_bytes(1, byteorder="big")
+    message += (1).to_bytes(2, byteorder="big") + min_version.to_bytes(2, byteorder="big")
+    message += (16).to_bytes(2, byteorder="big") + tag_buffer
     message += throttle_time_ms.to_bytes(4, byteorder="big") + tag_buffer
 
     message_len = len(message).to_bytes(4, byteorder="big")
