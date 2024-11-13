@@ -18,6 +18,8 @@ def create_message(correlation_id: int, error_code: ErrorCode, api_key: int) -> 
     message += error_code.value.to_bytes(2, byteorder="big") + int(3).to_bytes(1, byteorder="big")
     message += api_key.to_bytes(2, byteorder="big") + min_version.to_bytes(2, byteorder="big")
     message += max_version.to_bytes(2, byteorder="big") + tag_buffer
+    message += (1).to_bytes(2, byteorder="big") + min_version.to_bytes(2, byteorder="big")
+    message += (16).to_bytes(2, byteorder="big") + tag_buffer
     message += throttle_time_ms.to_bytes(4, byteorder="big") + tag_buffer
 
 
