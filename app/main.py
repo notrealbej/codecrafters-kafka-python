@@ -21,11 +21,11 @@ def fetch_message(correlation_id: int, api_key: int, api_version: int):
             else ErrorCode.UNSUPPORTED_VERSION
         )
 
-    message = correlation_id.to_bytes(4, byteorder="big") + tag_buffer
-    message += error_code.value.to_bytes(2, byteorder="big") + session_id.to_bytes(4, byteorder="big")
-    message += tag_buffer + int(len(responses) + 1).to_bytes(1) + tag_buffer
+    message = correlation_id.to_bytes(4, byteorder="big") + tag_buffer + throttle_time_ms.to_bytes(4, byteorder="big", signed=True)
+    message += (error_code).to_bytes(2, byteorder="big", signed=True) + (session_id).to_bytes(4, byteorder="big", signed=True)
+    message += (len(responses)).to_bytes(1, byteorder="big", signed = True) + tag_buffer
 
-    return message
+    return len(message).to_bytes(4, byteorder="big") + message
 
 def apiversion_message(correlation_id: int, api_key: int, api_version: int):
     min_version, max_version = 0, 4
