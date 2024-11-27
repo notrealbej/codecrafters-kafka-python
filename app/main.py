@@ -73,11 +73,12 @@ def create_message(req) -> bytes:
     request_headers = req["headers"]
     request_body = req["body"]
 
+    correlation_id = request_headers["correlation_id"]
     api_key = request_headers["api_key"]
     api_version = request_headers["api_version"]
     message = b""
     if api_key == 1:
-        message = fetch_message(api_key, api_version, request_body)
+        message = correlation_id.to_bytes(4) + fetch_message(api_key, api_version, request_body)
     elif api_key == 18:
         message = apiversion_message(request_headers["correlation_id"], api_key, api_version)
 
