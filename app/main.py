@@ -16,7 +16,7 @@ def fetch_message(correlation_id: int, api_key: int, api_version: int):
 
     message = correlation_id.to_bytes(4, byteorder="big") + throttle_time_ms.to_bytes(4, byteorder="big", signed=True)
     message += (error_code).to_bytes(2, byteorder="big", signed=True) + (session_id).to_bytes(4, byteorder="big", signed=True)
-    message += (len(responses) + 1).to_bytes(1, byteorder="big"gi) + tag_buffer
+    message += (len(responses) + 1).to_bytes(1, byteorder="big") + tag_buffer
 
     return message
 
