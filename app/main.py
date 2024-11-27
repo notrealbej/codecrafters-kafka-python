@@ -120,7 +120,7 @@ def parse_fetch_request_v16(body):
         topic_id = body[22 + offset: 22 + 16 + offset]
         num_partitions = body[22+16+offset: 22+17+offset]
         partitions = []
-        for j in range(1, int.from_bytes(num_partitions, signet=True)):
+        for j in range(1, int.from_bytes(num_partitions, signed=True)):
             partition = body[22+17+offset: 22+21+offset]
             current_leader_epoch = body[22+21+offset: 22+25+offset]
             fetch_offset = body[22+25+offset: 22+33+offset]
