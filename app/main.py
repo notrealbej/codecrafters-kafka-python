@@ -7,7 +7,7 @@ def fetch_helper(body: bytes):
         "hi": 10
     }
 
-def fetch_message(correlation_id: int, api_key: int, api_version: int, req_body: bytes):
+def fetch_message(api_key: int, api_version: int, req_body: bytes):
     min_version, max_version = 0, 16
     throttle_time_ms = 0
     tag_buffer = b"\x00"
