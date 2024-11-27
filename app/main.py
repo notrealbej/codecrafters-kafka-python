@@ -3,22 +3,45 @@ import threading
 from enum import Enum, unique
 
 
-def fetch_message(correlation_id: int, api_key: int, api_version: int):
+def fetch_message(correlation_id: int, api_key: int, api_version: int) -> bytes:
+    # Ensure version is valid
     min_version, max_version = 0, 16
-    throttle_time_ms = 0
-    tag_buffer = b"\x00"
-    session_id = 0
-    responses = []
-
-    error_code = 0
-    if max_version < api_version or api_version < min_version: 
+    if not (min_version <= api_version <= max_version):
         error_code = 35
+        throttle_time_ms = 0
+        session_id = 0
+        responses = 0
+        tag_buffer = b"\x00"
+        
+        # Encode response for invalid version
+        message = (
+            correlation_id.to_bytes(4, byteorder="big") + 
+            throttle_time_ms.to_bytes(4, byteorder="big") + 
+            error_code.to_bytes(2, byteorder="big") + 
+            session_id.to_bytes(4, byteorder="big") + 
+            responses.to_bytes(4, byteorder="big") + 
+            tag_buffer
+        )
+        return message
 
-    message = correlation_id.to_bytes(4, byteorder="big") + throttle_time_ms.to_bytes(4, byteorder="big", signed=True)
-    message += (error_code).to_bytes(2, byteorder="big", signed=True) + (session_id).to_bytes(4, byteorder="big", signed=True)
-    message += (len(responses) + 1).to_bytes(1, byteorder="big") + tag_buffer
+    # Response for valid version
+    throttle_time_ms = 0
+    error_code = 0
+    session_id = 1
+    responses = []  # No actual responses yet
+    tag_buffer = b"\x00"  # No tagged fields
 
+    # Construct the response body
+    message = (
+        correlation_id.to_bytes(4, byteorder="big") +
+        throttle_time_ms.to_bytes(4, byteorder="big") +
+        error_code.to_bytes(2, byteorder="big") +
+        session_id.to_bytes(4, byteorder="big") +
+        len(responses).to_bytes(4, byteorder="big") +  # Number of responses
+        tag_buffer
+    )
     return message
+
 
 def apiversion_message(correlation_id: int, api_key: int, api_version: int):
     min_version, max_version = 0, 4
