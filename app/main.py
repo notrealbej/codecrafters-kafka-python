@@ -31,7 +31,7 @@ def apiversion_message(correlation_id: int, api_key: int, api_version: int):
         error_code = 35
 
     message = correlation_id.to_bytes(4, byteorder="big")
-    message += error_code.value.to_bytes(2, byteorder="big") + int(3).to_bytes(1, byteorder="big") #3 indicates 2 api keys
+    message += error_code.to_bytes(2, byteorder="big") + int(3).to_bytes(1, byteorder="big") #3 indicates 2 api keys
     message += api_key.to_bytes(2, byteorder="big") + min_version.to_bytes(2, byteorder="big")
     message += max_version.to_bytes(2, byteorder="big") + tag_buffer
     message += (1).to_bytes(2, byteorder="big") + min_version.to_bytes(2, byteorder="big")
