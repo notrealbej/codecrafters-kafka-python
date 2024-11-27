@@ -8,20 +8,54 @@ class ErrorCode(Enum):
     NONE = 0
     UNSUPPORTED_VERSION = 35
 
+def fetch_message(correlation_id: int, api_key: int, api_version: int):
+    min_version, max_version = 0, 16
+    throttle_time_ms = 0
+    tag_buffer = b"\x00"
+    session_id = 0
+    responses = []
 
-def create_message(correlation_id: int, error_code: ErrorCode, api_key: int) -> bytes:
+    error_code = (
+            ErrorCode.NONE
+            if min_version <= api_version <= max_version
+            else ErrorCode.UNSUPPORTED_VERSION
+        )
+
+    message = correlation_id.to_bytes(4, byteorder="big") + tag_buffer
+    message += error_code.value.to_bytes(2, byteorder="big") + session_id.to_bytes(4, byteorder="big")
+    message += tag_buffer + int(len(responses) + 1).to_bytes(1) + tag_buffer
+
+    return message
+
+def apiversion_message(correlation_id: int, api_key: int, api_version: int):
     min_version, max_version = 0, 4
     throttle_time_ms = 0
     tag_buffer = b"\x00"
 
+    error_code = (
+            ErrorCode.NONE
+            if 0 <= "api_version" <= 4
+            else ErrorCode.UNSUPPORTED_VERSION
+        )
+
     message = correlation_id.to_bytes(4, byteorder="big")
-    message += error_code.value.to_bytes(2, byteorder="big") + int(3).to_bytes(1, byteorder="big")
+    message += error_code.value.to_bytes(2, byteorder="big") + int(3).to_bytes(1, byteorder="big") #3 indicates 2 api keys
     message += api_key.to_bytes(2, byteorder="big") + min_version.to_bytes(2, byteorder="big")
     message += max_version.to_bytes(2, byteorder="big") + tag_buffer
     message += (1).to_bytes(2, byteorder="big") + min_version.to_bytes(2, byteorder="big")
     message += (16).to_bytes(2, byteorder="big") + tag_buffer
     message += throttle_time_ms.to_bytes(4, byteorder="big") + tag_buffer
 
+    return message
+
+
+
+def create_message(correlation_id: int, api_key: int, api_version: int) -> bytes:
+    message = ""
+    if api_key == 1:
+        message = fetch_message(correlation_id, api_key, api_version)
+    elif api_key == 18:
+        message = apiversion_message(correlation_id, api_key, api_version)
 
     message_len = len(message).to_bytes(4, byteorder="big")
     return message_len + message
@@ -42,14 +76,9 @@ def handler(client):
             break
 
         request_data = parse_request(request)
-        error_code = (
-            ErrorCode.NONE
-            if 0 <= request_data["api_version"] <= 4
-            else ErrorCode.UNSUPPORTED_VERSION
-        )
 
         message = create_message(
-            request_data["correlation_id"], error_code, request_data["api_key"]
+            request_data["correlation_id"], request_data["api_key"], request_data["api_version"]
         )
         client.sendall(message)
 
