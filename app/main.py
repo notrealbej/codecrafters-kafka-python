@@ -3,11 +3,6 @@ import threading
 from enum import Enum, unique
 
 
-@unique
-class ErrorCode(Enum):
-    NONE = 0
-    UNSUPPORTED_VERSION = 35
-
 def fetch_message(correlation_id: int, api_key: int, api_version: int):
     min_version, max_version = 0, 16
     throttle_time_ms = 0
@@ -15,28 +10,24 @@ def fetch_message(correlation_id: int, api_key: int, api_version: int):
     session_id = 0
     responses = []
 
-    error_code = (
-            0
-            if min_version <= api_version <= max_version
-            else 35
-        )
+    error_code = 0
+    if max_version < api_version or api_version < min_version: 
+        error_code = 35
 
-    message = correlation_id.to_bytes(4, byteorder="big") + tag_buffer + throttle_time_ms.to_bytes(4, byteorder="big", signed=True)
+    message = correlation_id.to_bytes(4, byteorder="big") + throttle_time_ms.to_bytes(4, byteorder="big", signed=True)
     message += (error_code).to_bytes(2, byteorder="big", signed=True) + (session_id).to_bytes(4, byteorder="big", signed=True)
-    message += (len(responses)).to_bytes(1, byteorder="big", signed = True) + tag_buffer
+    message += (len(responses) + 1).to_bytes(1, byteorder="big"gi) + tag_buffer
 
-    return len(message).to_bytes(4, byteorder="big") + message
+    return message
 
 def apiversion_message(correlation_id: int, api_key: int, api_version: int):
     min_version, max_version = 0, 4
     throttle_time_ms = 0
     tag_buffer = b"\x00"
 
-    error_code = (
-            0
-            if 0 <= "api_version" <= 4
-            else 35
-        )
+    error_code = 0
+    if max_version < api_version or api_version < min_version: 
+        error_code = 35
 
     message = correlation_id.to_bytes(4, byteorder="big")
     message += error_code.value.to_bytes(2, byteorder="big") + int(3).to_bytes(1, byteorder="big") #3 indicates 2 api keys
