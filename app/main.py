@@ -45,7 +45,7 @@ def fetch_message(correlation_id: int, api_key: int, api_version: int, req_body:
         responses += tag_buffer
     responses += tag_buffer
 
-    return responses
+    return throttle_time_ms + error_code + session_id + responses
 
 def apiversion_message(correlation_id: int, api_key: int, api_version: int):
     min_version, max_version = 0, 4
