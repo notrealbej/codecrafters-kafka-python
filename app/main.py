@@ -7,7 +7,7 @@ def fetch_helper(body: bytes):
         "hi": 10
     }
 
-def fetch_message(api_key: int, api_version: int, req_body: bytes):
+def fetch_message(api_key: int, api_version: int, req_body):
     min_version, max_version = 0, 16
     throttle_time_ms = 0
     tag_buffer = b"\x00"
@@ -141,6 +141,7 @@ def parse_fetch_request_v16(body):
             "topic_id": topic_id,
             "partitions": partitions
         })
+        offset += 1
     
     num_forgotten_topics_data = body[22+offset: 23+offset]
     forgotten_topics_data = []
