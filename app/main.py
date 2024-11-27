@@ -16,9 +16,9 @@ def fetch_message(correlation_id: int, api_key: int, api_version: int):
     responses = []
 
     error_code = (
-            ErrorCode.NONE
+            0
             if min_version <= api_version <= max_version
-            else ErrorCode.UNSUPPORTED_VERSION
+            else 35
         )
 
     message = correlation_id.to_bytes(4, byteorder="big") + tag_buffer + throttle_time_ms.to_bytes(4, byteorder="big", signed=True)
@@ -33,9 +33,9 @@ def apiversion_message(correlation_id: int, api_key: int, api_version: int):
     tag_buffer = b"\x00"
 
     error_code = (
-            ErrorCode.NONE
+            0
             if 0 <= "api_version" <= 4
-            else ErrorCode.UNSUPPORTED_VERSION
+            else 35
         )
 
     message = correlation_id.to_bytes(4, byteorder="big")
