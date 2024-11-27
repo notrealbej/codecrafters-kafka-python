@@ -2,8 +2,14 @@ import socket
 import threading
 from enum import Enum, unique
 
+def fetch_helper(body: bytes):
+    return {
+        "hi": 10
+    }
 
-def fetch_message(correlation_id: int, api_key: int, api_version: int):
+def fetch_message(correlation_id: int, api_key: int, api_version: int, body: bytes):
+    fetch_body = fetch_helper(body)
+
     min_version, max_version = 0, 16
     throttle_time_ms = 0
     tag_buffer = b"\x00"
@@ -42,10 +48,10 @@ def apiversion_message(correlation_id: int, api_key: int, api_version: int):
 
 
 
-def create_message(correlation_id: int, api_key: int, api_version: int) -> bytes:
+def create_message(correlation_id: int, api_key: int, api_version: int, body: bytes) -> bytes:
     # message = ""
     if api_key == 1:
-        message = fetch_message(correlation_id, api_key, api_version)
+        message = fetch_message(correlation_id, api_key, api_version, body)
     elif api_key == 18:
         message = apiversion_message(correlation_id, api_key, api_version)
 
@@ -59,6 +65,7 @@ def parse_request(data: bytes) -> dict[str, int]:
         "api_key": int.from_bytes(data[4:6], byteorder="big"),
         "api_version": int.from_bytes(data[6:8], byteorder="big"),
         "correlation_id": int.from_bytes(data[8:12], byteorder="big"),
+        "body": data[12:]
     }
 
 def handler(client):
@@ -70,7 +77,7 @@ def handler(client):
         request_data = parse_request(request)
 
         message = create_message(
-            request_data["correlation_id"], request_data["api_key"], request_data["api_version"]
+            request_data["correlation_id"], request_data["api_key"], request_data["api_version"], request_data["body"]
         )
         client.sendall(message)
 
