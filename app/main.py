@@ -8,8 +8,6 @@ def fetch_helper(body: bytes):
     }
 
 def fetch_message(correlation_id: int, api_key: int, api_version: int, req_body: bytes):
-    
-
     min_version, max_version = 0, 16
     throttle_time_ms = 0
     tag_buffer = b"\x00"
@@ -73,9 +71,9 @@ def create_message(req) -> bytes:
     request_headers = req["headers"]
     request_body = req["body"]
 
-    correlation_id = request_headers["correlation_id"]
-    api_key = request_headers["api_key"]
-    api_version = request_headers["api_version"]
+    correlation_id = int.from_bytes(request_headers["correlation_id"])
+    api_key = int.from_bytes(request_headers["api_key"])
+    api_version = int.from_bytes(request_headers["api_version"])
     message = b""
     if api_key == 1:
         message = correlation_id.to_bytes(4) + fetch_message(api_key, api_version, request_body)
@@ -86,7 +84,7 @@ def create_message(req) -> bytes:
     return message_len + message
 
 def parse_header(req: bytes):
-    request_length = req[0:4]
+    request_length = (req[0:4])
     request_api_key = req[4:6]
     request_api_version = req[6:8]
     correlation_id = req[8:12]
