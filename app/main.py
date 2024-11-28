@@ -1,11 +1,5 @@
 import socket
 import threading
-from enum import Enum, unique
-
-def fetch_helper(body: bytes):
-    return {
-        "hi": 10
-    }
 
 def fetch_message(api_key: int, api_version: int, req_body):
     min_version, max_version = 0, 16
@@ -14,11 +8,14 @@ def fetch_message(api_key: int, api_version: int, req_body):
     session_id = 0
     responses = []
 
+    # print(req_body)
+    # return b""
+
     error_code = 0
     if max_version < api_version or api_version < min_version: 
         error_code = 35
 
-    throttle_time_ms = int.to_bytes(0, 4, signed=True)
+    throttle_time_ms = int.to_bytes(0, 4,byteorder="big", signed=True)
     session_id = req_body["session_id"]
     req_topics = req_body["topics"]
     num_request = len(req_topics)
@@ -71,14 +68,14 @@ def create_message(req) -> bytes:
     request_headers = req["headers"]
     request_body = req["body"]
 
-    correlation_id = int.from_bytes(request_headers["correlation_id"])
-    api_key = int.from_bytes(request_headers["api_key"])
-    api_version = int.from_bytes(request_headers["api_version"])
+    correlation_id = int.from_bytes(request_headers["correlation_id"], byteorder="big")
+    api_key = int.from_bytes(request_headers["api_key"], byteorder="big")
+    api_version = int.from_bytes(request_headers["api_version"], byteorder="big")
     message = b""
     if api_key == 1:
-        message = correlation_id.to_bytes(4) + fetch_message(api_key, api_version, request_body)
+        message = correlation_id.to_bytes(4, byteorder="big") + fetch_message(api_key, api_version, req_body=request_body)
     elif api_key == 18:
-        message = apiversion_message(request_headers["correlation_id"], api_key, api_version)
+        message = apiversion_message(correlation_id, api_key, api_version)
 
     message_len = len(message).to_bytes(4, byteorder="big")
     return message_len + message
@@ -89,7 +86,7 @@ def parse_header(req: bytes):
     request_api_version = req[6:8]
     correlation_id = req[8:12]
     client_id_size = req[12:14]
-    offset = int.from_bytes(client_id_size, signed=True)
+    offset = int.from_bytes(client_id_size,byteorder="big", signed=True)
     client_id = req[14 : 14 + offset] if offset != -1 else b"\x00"
     offset = 14 if offset == -1 else 14 + offset
     tag_buffer = req[offset : offset + 1]
@@ -102,7 +99,7 @@ def parse_header(req: bytes):
         "client_id_size": client_id_size,
         "client_id": client_id,
         "tag_buffer": tag_buffer,
-        "offset": int.to_bytes(offset, 4),
+        "offset": int.to_bytes(offset, byteorder="big", length=4)
     }
 
 def parse_fetch_request_v16(body):
@@ -115,11 +112,11 @@ def parse_fetch_request_v16(body):
     num_topics = body[21:22]
     topics = []
     offset = 0
-    for i in range(1, int.from_bytes(num_topics, signed=True)):
+    for i in range(1, int.from_bytes(num_topics, byteorder="big", signed=True)):
         topic_id = body[22 + offset: 22 + 16 + offset]
         num_partitions = body[22+16+offset: 22+17+offset]
         partitions = []
-        for j in range(1, int.from_bytes(num_partitions, signed=True)):
+        for j in range(1, int.from_bytes(num_partitions, byteorder="big", signed=True)):
             partition = body[22+17+offset: 22+21+offset]
             current_leader_epoch = body[22+21+offset: 22+25+offset]
             fetch_offset = body[22+25+offset: 22+33+offset]
@@ -145,7 +142,7 @@ def parse_fetch_request_v16(body):
     
     num_forgotten_topics_data = body[22+offset: 23+offset]
     forgotten_topics_data = []
-    for _ in range(1, int.from_bytes(num_forgotten_topics_data, signed=True)):
+    for _ in range(1, int.from_bytes(num_forgotten_topics_data, byteorder="big",signed=True)):
         topic_id_ftd = body[23 + offset : 23 + offset + 16]
         num_partitions_ftd = body[23 + offset + 16 : 23 + offset + 17]
         partitions_ftd = []
@@ -174,16 +171,16 @@ def parse_fetch_request_v16(body):
 
 def parse_request_body(api_key, api_version, body):
     if api_key == 1 and api_version == 16:
-        parse_fetch_request_v16(body)
+        return parse_fetch_request_v16(body)
 
 
 def parse_request(req: bytes) -> dict[str, int]:
     headers = parse_header(req)
     offset = headers["offset"]
     body = parse_request_body(
-        int.from_bytes(headers["api_key"]),
-        int.from_bytes(headers["api_version"]),
-        req[int.from_bytes(offset) :],
+        int.from_bytes(headers["api_key"], byteorder="big"),
+        int.from_bytes(headers["api_version"], byteorder="big"),
+        req[int.from_bytes(offset, byteorder="big") :],
     )
     return {"headers": headers, "body": body}
 
