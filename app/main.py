@@ -3,7 +3,7 @@ import threading
 
 def fetch_message(api_key: int, api_version: int, req_body):
     min_version, max_version = 0, 16
-    throttle_time_ms = 0
+    # throttle_time_ms = 0
     tag_buffer = b"\x00"
     session_id = 0
     responses = []
@@ -11,9 +11,9 @@ def fetch_message(api_key: int, api_version: int, req_body):
     # print(req_body)
     # return b""
 
-    error_code = 0
+    error_code = int.to_bytes(0, 2,byteorder="big", signed=True)
     if max_version < api_version or api_version < min_version: 
-        error_code = 35
+        error_code = int.to_bytes(35, 2, byteorder="big", signed=True)
 
     throttle_time_ms = int.to_bytes(0, 4,byteorder="big", signed=True)
     session_id = req_body["session_id"]
