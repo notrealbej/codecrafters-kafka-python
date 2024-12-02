@@ -73,7 +73,7 @@ def create_message(req) -> bytes:
     api_version = int.from_bytes(request_headers["api_version"], byteorder="big")
     message = b""
     if api_key == 1:
-        message = correlation_id.to_bytes(4, byteorder="big") + fetch_message(api_key, api_version, req_body=request_body)
+        message = correlation_id.to_bytes(4, byteorder="big") + b"\x00" + fetch_message(api_key, api_version, req_body=request_body)
     elif api_key == 18:
         message = apiversion_message(correlation_id, api_key, api_version)
 
@@ -172,6 +172,7 @@ def parse_fetch_request_v16(body):
 def parse_request_body(api_key, api_version, body):
     if api_key == 1 and api_version == 16:
         return parse_fetch_request_v16(body)
+    return b""
 
 
 def parse_request(req: bytes) -> dict[str, int]:
